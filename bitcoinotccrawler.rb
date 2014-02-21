@@ -2,13 +2,30 @@ require 'rubygems'
 require 'nokogiri'
 require 'net/http'
 require 'json'
+require 'yaml'
 require './identifirpc.rb'
+
+CONFIG = {}
+YAML.load_file("./config.yml").each { |k,v| CONFIG["#{k}"] = v }
 
 USER_LIST_FILE = "bitcoin-otc-data/bitcoin-otc-wot.html"
 RATINGDETAILS_DIR = "bitcoin-otc-data/ratingdetails"
 VIEWGPG_DIR = "bitcoin-otc-data/viewgpg"
 LISTING_URI = URI("http://bitcoin-otc.com/viewratings.php")
-IDENTIFI_HOST = 'http://identifirpc:FLg69hEBwf778rC4dSLEzdMtoyt41Ea8akffmGKHPLuf@127.0.0.1:8332'
+IDENTIFI_PACKET = {
+                    signedData:
+                      {
+                        timestamp: 0,
+                        author: [],
+                        recipient: [],
+                        rating: 0,
+                        maxRating: 10,
+                        minRating: -10,
+                        comment: "",
+                        type: "review"
+                      },
+                    signatures: []
+                  }
 
 def ratingsJsonUrl(nickname)
   "http://bitcoin-otc.com/viewratingdetail.php?nick=#{nickname}&sign=ANY&type=RECV&outformat=json"
@@ -18,7 +35,7 @@ def userJsonUrl(nickname)
   "http://bitcoin-otc.com/viewgpg.php?nick=#{nickname}&outformat=json"
 end
 
-def userID(nickname)
+def otcUserID(nickname)
   "#{nickname}@bitcoin-otc.com"
 end
 
@@ -75,28 +92,42 @@ def download
 end
 
 def saveRatings(ratingFileName, identifi)
-    File.open( "#{RATINGDETAILS_DIR}/#{ratingFileName}", "r" ) do |ratingFile|
-      ratings = JSON.load( ratingFile )
-      
-      File.open( "#{VIEWGPG_DIR}/#{ratingFileName}", "r" ) do |userFile|
-        user = JSON.load( userFile )[0]
-        
-        ratings.each do |rating|
-          identifi.savepacket("account", userID(rating["rater_nick"].to_s), "account", userID(rating["rated_nick"].to_s), rating["notes"].to_s, rating["rating"].to_s)
-        end
+  File.open( "#{RATINGDETAILS_DIR}/#{ratingFileName}", "r" ) do |ratingFile|
+    ratings = JSON.load( ratingFile )
+    
+    File.open( "#{VIEWGPG_DIR}/#{ratingFileName}", "r" ) do |userFile|
+      ratedUser = JSON.load( userFile )[0]
+      return unless ratedUser
 
-        return unless user
+      ratedUserName = File.basename(ratingFileName, ".*")
 
-        userName = File.basename( ratingFileName, ".*" )
-        identifi.saveconnection("url", "bitcoin-otc.com", "account", userID(userName), "bitcoinaddress", user["bitcoinaddress"].to_s) if user["bitcoinaddress"]
-        identifi.saveconnection("url", "bitcoin-otc.com", "account", userID(userName), "gpg_fingerprint", user["fingerprint"].to_s) if user["fingerprint"]
-        identifi.saveconnection("url", "bitcoin-otc.com", "account", userID(userName), "nickname", userName)
+      ratings.each do |rating|
+        ratingPacket = Marshal.load(Marshal.dump(IDENTIFI_PACKET))
+        ratingPacket[:signedData][:author].push(["account", otcUserID(rating["rater_nick"])])
+        ratingPacket[:signedData][:recipient].push(["account", otcUserID(rating["rated_nick"])])
+        ratingPacket[:signedData][:rating] = rating["rating"].to_i
+        ratingPacket[:signedData][:comment] = rating["notes"]
+        ratingPacket[:signedData][:timestamp] = rating["created_at"].to_i
+        identifi.savepacketfromdata(ratingPacket.to_json)
       end
+
+      connections = Marshal.load(Marshal.dump(IDENTIFI_PACKET))
+      connections[:signedData][:author].push(["account", otcUserID(ratedUserName)])
+      connections[:signedData][:recipient].push(["account", otcUserID(ratedUserName)])
+      connections[:signedData][:recipient].push(["nickname", ratedUserName])
+      connections[:signedData][:recipient].push(["bitcoin_address", ratedUser["bitcoinaddress"]]) if ratedUser["bitcoinaddress"]
+      connections[:signedData][:recipient].push(["gpg_fingerprint", ratedUser["fingerprint"]]) if ratedUser["fingerprint"]
+      connections[:signedData][:recipient].push(["gpg_keyid", ratedUser["keyid"]]) if ratedUser["keyid"]
+      connections[:signedData][:type] = "connection"
+      connections[:signedData][:timestamp] = ratedUser["registered_at"].to_i
+
+      identifi.savepacketfromdata(connections.to_json)
     end
+  end
 end
 
 def addToIdentifi
-	identifi = IdentifiRPC.new(IDENTIFI_HOST)
+	identifi = IdentifiRPC.new(CONFIG["identifiHost"])
 
   i = 0
   Dir.foreach(RATINGDETAILS_DIR) do |item|
