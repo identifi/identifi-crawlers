@@ -91,48 +91,52 @@ def download
   end
 end
 
-def saveRatings(ratingFileName, identifi)
-  File.open( "#{RATINGDETAILS_DIR}/#{ratingFileName}", "r" ) do |ratingFile|
-    ratings = JSON.load( ratingFile )
-    
-    File.open( "#{VIEWGPG_DIR}/#{ratingFileName}", "r" ) do |userFile|
-      ratedUser = JSON.load( userFile )[0]
-      return unless ratedUser
+def saveRatings(ratingFileName, identifi, publish)
+  begin
+    File.open( "#{RATINGDETAILS_DIR}/#{ratingFileName}", "r" ) do |ratingFile|
+      ratings = JSON.load( ratingFile )
+      
+      File.open( "#{VIEWGPG_DIR}/#{ratingFileName}", "r" ) do |userFile|
+        ratedUser = JSON.load( userFile )[0]
+        return unless ratedUser
 
-      ratedUserName = File.basename(ratingFileName, ".*")
+        ratedUserName = File.basename(ratingFileName, ".*")
 
-      ratings.each do |rating|
-        ratingPacket = Marshal.load(Marshal.dump(IDENTIFI_PACKET))
-        ratingPacket[:signedData][:author].push(["account", otcUserID(rating["rater_nick"])])
-        ratingPacket[:signedData][:recipient].push(["account", otcUserID(rating["rated_nick"])])
-        ratingPacket[:signedData][:rating] = rating["rating"].to_i
-        ratingPacket[:signedData][:comment] = rating["notes"]
-        ratingPacket[:signedData][:timestamp] = rating["created_at"].to_i
-        identifi.savepacketfromdata(ratingPacket.to_json)
+        ratings.each do |rating|
+          ratingPacket = Marshal.load(Marshal.dump(IDENTIFI_PACKET))
+          ratingPacket[:signedData][:author].push(["account", otcUserID(rating["rater_nick"])])
+          ratingPacket[:signedData][:recipient].push(["account", otcUserID(rating["rated_nick"])])
+          ratingPacket[:signedData][:rating] = rating["rating"].to_i
+          ratingPacket[:signedData][:comment] = rating["notes"]
+          ratingPacket[:signedData][:timestamp] = rating["created_at"].to_i
+          identifi.savepacketfromdata(ratingPacket.to_json, publish.to_s)
+        end
+
+        connections = Marshal.load(Marshal.dump(IDENTIFI_PACKET))
+        connections[:signedData][:author].push(["account", otcUserID(ratedUserName)])
+        connections[:signedData][:recipient].push(["account", otcUserID(ratedUserName)])
+        connections[:signedData][:recipient].push(["nickname", ratedUserName])
+        connections[:signedData][:recipient].push(["bitcoin_address", ratedUser["bitcoinaddress"]]) if ratedUser["bitcoinaddress"]
+        connections[:signedData][:recipient].push(["gpg_fingerprint", ratedUser["fingerprint"]]) if ratedUser["fingerprint"]
+        connections[:signedData][:recipient].push(["gpg_keyid", ratedUser["keyid"]]) if ratedUser["keyid"]
+        connections[:signedData][:type] = "connection"
+        connections[:signedData][:timestamp] = ratedUser["registered_at"].to_i
+
+        identifi.savepacketfromdata(connections.to_json, publish.to_s)
       end
-
-      connections = Marshal.load(Marshal.dump(IDENTIFI_PACKET))
-      connections[:signedData][:author].push(["account", otcUserID(ratedUserName)])
-      connections[:signedData][:recipient].push(["account", otcUserID(ratedUserName)])
-      connections[:signedData][:recipient].push(["nickname", ratedUserName])
-      connections[:signedData][:recipient].push(["bitcoin_address", ratedUser["bitcoinaddress"]]) if ratedUser["bitcoinaddress"]
-      connections[:signedData][:recipient].push(["gpg_fingerprint", ratedUser["fingerprint"]]) if ratedUser["fingerprint"]
-      connections[:signedData][:recipient].push(["gpg_keyid", ratedUser["keyid"]]) if ratedUser["keyid"]
-      connections[:signedData][:type] = "connection"
-      connections[:signedData][:timestamp] = ratedUser["registered_at"].to_i
-
-      identifi.savepacketfromdata(connections.to_json)
     end
+  rescue
+    puts "Error saving #{ratingFileName}"
   end
 end
 
-def addToIdentifi
+def addToIdentifi(publish=false)
 	identifi = IdentifiRPC.new(CONFIG["identifiHost"])
 
   i = 0
   Dir.foreach(RATINGDETAILS_DIR) do |item|
     next if item == '.' or item == '..'
-    saveRatings(item, identifi)
+    saveRatings(item, identifi, publish)
     i += 1
     puts "#{i} #{item}"
   end
