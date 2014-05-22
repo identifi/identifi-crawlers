@@ -24,7 +24,7 @@ IDENTIFI_PACKET = {
                         comment: "",
                         type: "review"
                       },
-                    signatures: []
+                    signature: {}
                   }
 
 def ratingsJsonUrl(nickname)
@@ -125,8 +125,8 @@ def saveRatings(ratingFileName, identifi, publish)
         identifi.savepacketfromdata(connections.to_json, publish.to_s)
       end
     end
-  rescue
-    puts "Error saving #{ratingFileName}"
+  rescue Exception => e
+    puts "Error saving #{ratingFileName}: #{e.backtrace}"
   end
 end
 
