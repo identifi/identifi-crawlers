@@ -22,7 +22,7 @@ IDENTIFI_PACKET = {
                         maxRating: 10,
                         minRating: -10,
                         comment: "",
-                        type: "review"
+                        type: "rating"
                       },
                     signature: {}
                   }
