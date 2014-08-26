@@ -119,7 +119,7 @@ def saveRatings(ratingFileName, identifi, publish)
         connections[:signedData][:recipient].push(["bitcoin_address", ratedUser["bitcoinaddress"]]) if ratedUser["bitcoinaddress"]
         connections[:signedData][:recipient].push(["gpg_fingerprint", ratedUser["fingerprint"]]) if ratedUser["fingerprint"]
         connections[:signedData][:recipient].push(["gpg_keyid", ratedUser["keyid"]]) if ratedUser["keyid"]
-        connections[:signedData][:type] = "connection"
+        connections[:signedData][:type] = "confirm_connection"
         connections[:signedData][:timestamp] = ratedUser["registered_at"].to_i
 
         identifi.savepacketfromdata(connections.to_json, publish.to_s)
