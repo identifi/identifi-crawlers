@@ -51,7 +51,7 @@ def getuserlist
   return users
 end
 
-def downloadRatingDetails(http)
+def downloadRatingDetails(http, username)
   request = Net::HTTP::Get.new ratingsJsonUrl(username)
   response = http.request request # Net::HTTPResponse object
 
@@ -65,7 +65,7 @@ def downloadRatingDetails(http)
   end
 end
 
-def downloadViewGPG(http)
+def downloadViewGPG(http, username)
   request = Net::HTTP::Get.new userJsonUrl(username)
   response = http.request request # Net::HTTPResponse object
 
@@ -85,8 +85,8 @@ def download
 
     usernames.each_with_index do |username,i|
       puts "[#{i} / #{usernames.size}] #{username}"
-      downloadRatingDetails(http)
-      downloadViewGPG(http)
+      downloadRatingDetails(http, username)
+      downloadViewGPG(http, username)
     end
   end
 end
@@ -109,7 +109,7 @@ def saveRatings(ratingFileName, identifi, publish)
           ratingPacket[:signedData][:rating] = rating["rating"].to_i
           ratingPacket[:signedData][:comment] = rating["notes"]
           ratingPacket[:signedData][:timestamp] = rating["created_at"].to_i
-          identifi.savepacketfromdata(ratingPacket.to_json, publish.to_s)
+          identifi.savemsgfromdata(ratingPacket.to_json, publish.to_s)
         end
 
         connections = Marshal.load(Marshal.dump(IDENTIFI_PACKET))
@@ -122,7 +122,7 @@ def saveRatings(ratingFileName, identifi, publish)
         connections[:signedData][:type] = "confirm_connection"
         connections[:signedData][:timestamp] = ratedUser["registered_at"].to_i
 
-        identifi.savepacketfromdata(connections.to_json, publish.to_s)
+        identifi.savemsgfromdata(connections.to_json, publish.to_s)
       end
     end
   rescue Exception => e
