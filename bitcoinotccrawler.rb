@@ -116,7 +116,7 @@ def saveRatings(ratingFileName, identifi, publish)
         connections[:signedData][:author].push(["account", otcUserID(ratedUserName)])
         connections[:signedData][:recipient].push(["account", otcUserID(ratedUserName)])
         connections[:signedData][:recipient].push(["nickname", ratedUserName])
-        connections[:signedData][:recipient].push(["bitcoin_address", ratedUser["bitcoinaddress"]]) if ratedUser["bitcoinaddress"]
+        connections[:signedData][:recipient].push(["bitcoin", ratedUser["bitcoinaddress"]]) if ratedUser["bitcoinaddress"]
         connections[:signedData][:recipient].push(["gpg_fingerprint", ratedUser["fingerprint"]]) if ratedUser["fingerprint"]
         connections[:signedData][:recipient].push(["gpg_keyid", ratedUser["keyid"]]) if ratedUser["keyid"]
         connections[:signedData][:type] = "confirm_connection"
