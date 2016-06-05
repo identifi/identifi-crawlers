@@ -114,9 +114,11 @@ saveUserProfile = (filename) ->
   recipient.push ['bitcoin', ratedUser.bitcoinaddress] if ratedUser.bitcoinaddress
   recipient.push ['gpg_fingerprint', ratedUser.fingerprint] if ratedUser.fingerprint
   recipient.push ['gpg_keyid', ratedUser.keyid] if ratedUser.keyid
+  timestamp = new Date(parseInt(ratedUser.last_authed_at) * 1000)
   data =
     author: [['account', otcUserID(ratedUserName)]],
     recipient: recipient
+    timestamp: timestamp
     type: 'verify_identity'
   m = identifi.message.create(data)
   identifi.message.sign m, myKey.private.pem, myKey.public.hex
