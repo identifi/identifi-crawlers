@@ -1,0 +1,13 @@
+{
+  "name": "identifi-crawlers",
+  "version": "0.0.0",
+  "dependencies": {
+    "bluebird": "^3.4.0",
+    "cheerio": "^0.20.0",
+    "identifi-lib": "0.0.19",
+    "os-homedir": "^1.0.1",
+    "request": "^2.72.0"
+  },
+  "files": "dist",
+  "main": "index.js"
+}
