@@ -82,8 +82,8 @@ saveUserRatings = (filename) ->
       rating = ratings[i]
       timestamp = new Date(parseInt(parseFloat(rating.created_at) * 1000)).toISOString()
       data =
-        author: [['account', otcUserID(rating.rater_nick)]]
-        recipient: [['account', otcUserID(rating.rated_nick)]]
+        author: [['account', otcUserID(rating.rater_nick)], ['nickname', rating.rater_nick]]
+        recipient: [['account', otcUserID(rating.rated_nick)], ['nickname', rating.rated_nick]]
         rating: parseInt(rating.rating)
         comment: rating.notes
         timestamp: timestamp
