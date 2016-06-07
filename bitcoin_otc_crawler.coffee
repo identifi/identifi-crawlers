@@ -116,7 +116,7 @@ saveUserProfile = (filename) ->
   recipient.push ['gpg_keyid', ratedUser.keyid] if ratedUser.keyid
   timestamp = new Date(parseInt(ratedUser.last_authed_at) * 1000)
   data =
-    author: [['account', otcUserID(ratedUserName)]],
+    author: [['account', otcUserID(ratedUserName)], ['nickname', ratedUserName]],
     recipient: recipient
     timestamp: timestamp
     type: 'verify_identity'
