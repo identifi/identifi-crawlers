@@ -126,6 +126,7 @@ saveUserProfile = (filename) ->
     method: 'POST'
     apiMethod: 'messages'
     body: m
+    timeout: 15000
 
 saveRatings = ->
   fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
@@ -136,6 +137,9 @@ saveRatings = ->
       saveUserRatings(filename)
       .then -> saveUserProfile(filename)
       .then -> fn(i + 1)
+      .catch ->
+        console.log 'Caught error, trying to continue'
+        fn(i + 1)
     fn(0)
 
 #downloadUserList()
