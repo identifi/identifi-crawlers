@@ -1,16 +1,20 @@
 rp = require('request-promise')
 identifi = require('identifi-lib')
+ipfsAPI = require('ipfs-api')
 cheerio = require('cheerio')
 Promise = require('bluebird')
 fs = Promise.promisifyAll(require('fs'))
 osHomedir = require('os-homedir')
 datadir = process.env.IDENTIFI_DATADIR || (osHomedir() + '/.identifi')
-myKey = identifi.keyutil.getDefault(datadir)
 
 USER_LIST_FILE = "bitcoin-otc-data/bitcoin-otc-wot.html"
 RATINGDETAILS_DIR = "bitcoin-otc-data/ratingdetails"
 VIEWGPG_DIR = "bitcoin-otc-data/viewgpg"
 LISTING_URI = "http://bitcoin-otc.com/viewratings.php"
+
+ipfs = null
+myIndex = null
+myKey = null
 
 ratingsJsonUrl = (username) ->
   "http://bitcoin-otc.com/viewratingdetail.php?nick=" +
@@ -88,12 +92,8 @@ saveUserRatings = (filename) ->
         comment: rating.notes
         timestamp: timestamp
         context: 'bitcoin-otc.com'
-      m = identifi.message.createRating(data)
-      identifi.message.sign m, myKey.private.pem, myKey.public.hex
-      r = identifi.client.request
-        method: 'POST'
-        apiMethod: 'messages'
-        body: m
+      m = identifi.Message.createRating(data, myKey)
+      r = myIndex.addMessage(m)
       .catch (e) -> console.log e
       .finally -> fn(i + 1)
     fn(0)
@@ -119,28 +119,27 @@ saveUserProfile = (filename) ->
     author: [['account', otcUserID(ratedUserName)], ['nickname', ratedUserName]],
     recipient: recipient
     timestamp: timestamp
-    type: 'verify_identity'
-  m = identifi.message.create(data)
-  identifi.message.sign m, myKey.private.pem, myKey.public.hex
-  identifi.client.request
-    method: 'POST'
-    apiMethod: 'messages'
-    body: m
-    timeout: 15000
+  m = identifi.Message.createVerification(data, myKey)
+  myIndex.addMessage(m)
 
 saveRatings = ->
-  fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
-    fn = (i) ->
-      return if i >= filenames.length
-      filename = filenames[i]
-      console.log i + ' / ' + filenames.length + ' adding to identifi: ' + filename
-      saveUserRatings(filename)
-      .then -> saveUserProfile(filename)
-      .then -> fn(i + 1)
-      .catch ->
-        console.log 'Caught error, trying to continue'
-        fn(i + 1)
-    fn(0)
+  ipfs = ipfsAPI()
+  identifi.util.getDefaultKey().then (k) ->
+    myKey = k
+  identifi.Index.create().then (index) ->
+    myIndex = index
+    fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
+      fn = (i) ->
+        return if i >= filenames.length
+        filename = filenames[i]
+        console.log i + ' / ' + filenames.length + ' adding to identifi: ' + filename
+        saveUserRatings(filename)
+        .then -> saveUserProfile(filename)
+        .then -> fn(i + 1)
+        .catch ->
+          console.log 'Caught error, trying to continue'
+          fn(i + 1)
+      fn(0)
 
 #downloadUserList()
 #.then ->

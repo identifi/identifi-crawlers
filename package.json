@@ -4,9 +4,12 @@
   "dependencies": {
     "bluebird": "^3.4.0",
     "cheerio": "^0.20.0",
-    "identifi-lib": "0.0.19",
+    "debug": "^3.1.0",
+    "identifi-lib": "0.0.59",
+    "ipfs-api": "^22.2.3",
     "os-homedir": "^1.0.1",
-    "request": "^2.72.0"
+    "request": "^2.72.0",
+    "request-promise": "^4.2.2"
   },
   "files": "dist",
   "main": "index.js"
