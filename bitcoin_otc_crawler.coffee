@@ -95,7 +95,7 @@ saveUserRatings = (filename) ->
       m = identifi.Message.createRating(data, myKey)
       r = myIndex.addMessage(m)
       .catch (e) -> console.log e
-      .finally -> fn(i + 1)
+      .then -> fn(i + 1)
     fn(0)
 
 saveUserProfile = (filename) ->
@@ -124,8 +124,7 @@ saveUserProfile = (filename) ->
 
 saveRatings = ->
   ipfs = ipfsAPI()
-  identifi.util.getDefaultKey().then (k) ->
-    myKey = k
+  myKey = identifi.util.getDefaultKey('.')
   identifi.Index.create().then (index) ->
     myIndex = index
     fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
@@ -136,8 +135,8 @@ saveRatings = ->
         saveUserRatings(filename)
         .then -> saveUserProfile(filename)
         .then -> fn(i + 1)
-        .catch ->
-          console.log 'Caught error, trying to continue'
+        .catch (e) ->
+          console.log 'Caught error, trying to continue', e
           fn(i + 1)
       fn(0)
 
