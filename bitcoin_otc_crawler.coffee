@@ -1,6 +1,7 @@
 rp = require('request-promise')
 identifi = require('identifi-lib')
-ipfsAPI = require('ipfs-api')
+btree = require('merkle-btree')
+GUN = require('gun')
 cheerio = require('cheerio')
 Promise = require('bluebird')
 fs = Promise.promisifyAll(require('fs'))
@@ -115,9 +116,10 @@ saveUserProfile = (filename) ->
   msgsToAdd.push(m)
 
 saveRatings = ->
-  ipfs = ipfsAPI()
+  gun = new GUN(['http://localhost:8080/gun', 'https://identifi.herokuapp.com/gun'])
+  storage = new btree.GUNStorage(gun)
   myKey = identifi.util.getDefaultKey()
-  identifi.Index.create(ipfs).then (index) ->
+  identifi.Index.create(storage).then (index) ->
     myIndex = index
     m = identifi.Message.createRating
       recipient:[['account', 'BCB@bitcoin-otc.com']],
