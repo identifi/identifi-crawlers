@@ -77,6 +77,7 @@ saveUserRatings = (filename) ->
   ratings = JSON.parse(content)
   for rating in ratings
     process.stdout.write(".")
+    continue unless rating.rater_nick and rating.rated_nick
     timestamp = new Date(parseInt(parseFloat(rating.created_at) * 1000)).toISOString()
     data =
       author: [['account', otcUserID(rating.rater_nick)], ['nickname', rating.rater_nick]]
@@ -118,13 +119,17 @@ saveRatings = ->
   myKey = identifi.util.getDefaultKey()
   identifi.Index.create(ipfs).then (index) ->
     myIndex = index
-    m = identifi.Message.createRating({recipient:[['account', 'Aaron_TangCryp@bitcoin-otc.com']],rating:10}, myKey)
+    m = identifi.Message.createRating
+      recipient:[['account', 'BCB@bitcoin-otc.com']],
+      rating:10,
+      comment:'WoT entry point'
+    , myKey
     myIndex.addMessage(m)
   .then ->
     p = new Promise (resolve) ->
       fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
         for filename, i in filenames
-          break if i >= 100
+          break if i >= 10
           console.log i + ' / ' + filenames.length + ' adding to identifi: ' + filename
           try
             saveUserRatings(filename)
@@ -135,6 +140,8 @@ saveRatings = ->
   .then ->
     console.log 'msgsToAdd.length', msgsToAdd.length
     myIndex.addMessages(msgsToAdd)
+  .then ->
+    myIndex.save()
   .then (r) ->
     console.log r
     console.log 'added'
