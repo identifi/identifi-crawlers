@@ -5,12 +5,8 @@
     "bluebird": "^3.4.0",
     "cheerio": "^0.20.0",
     "debug": "^3.1.0",
-<<<<<<< HEAD
-    "identifi-lib": "0.0.61",
-=======
     "gun": "^0.9.9998",
     "identifi-lib": "0.0.62",
->>>>>>> 5986877832a1cf551428ef865b50cb79492a1d16
     "ipfs-api": "^22.2.3",
     "merkle-btree": "^1.0.23",
     "os-homedir": "^1.0.1",
