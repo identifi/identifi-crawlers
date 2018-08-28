@@ -1,6 +1,7 @@
 rp = require('request-promise')
 identifi = require('identifi-lib')
-ipfsAPI = require('ipfs-api')
+btree = require('merkle-btree')
+GUN = require('gun')
 cheerio = require('cheerio')
 Promise = require('bluebird')
 fs = Promise.promisifyAll(require('fs'))
@@ -12,9 +13,9 @@ RATINGDETAILS_DIR = "bitcoin-otc-data/ratingdetails"
 VIEWGPG_DIR = "bitcoin-otc-data/viewgpg"
 LISTING_URI = "http://bitcoin-otc.com/viewratings.php"
 
-ipfs = null
 myIndex = null
 myKey = null
+msgsToAdd = []
 
 ratingsJsonUrl = (username) ->
   "http://bitcoin-otc.com/viewratingdetail.php?nick=" +
@@ -75,28 +76,20 @@ download = ->
 saveUserRatings = (filename) ->
   content = fs.readFileSync RATINGDETAILS_DIR + '/' + filename, 'utf-8'
   ratings = JSON.parse(content)
-
-  return new Promise (resolve, reject) ->
-    fn = (i) ->
-      process.stdout.write(".")
-      if i >= ratings.length
-        process.stdout.write("\n")
-        resolve()
-        return
-      rating = ratings[i]
-      timestamp = new Date(parseInt(parseFloat(rating.created_at) * 1000)).toISOString()
-      data =
-        author: [['account', otcUserID(rating.rater_nick)], ['nickname', rating.rater_nick]]
-        recipient: [['account', otcUserID(rating.rated_nick)], ['nickname', rating.rated_nick]]
-        rating: parseInt(rating.rating)
-        comment: rating.notes
-        timestamp: timestamp
-        context: 'bitcoin-otc.com'
-      m = identifi.Message.createRating(data, myKey)
-      r = myIndex.addMessage(m)
-      .catch (e) -> console.log e
-      .then -> fn(i + 1)
-    fn(0)
+  for rating in ratings
+    process.stdout.write(".")
+    continue unless rating.rater_nick and rating.rated_nick
+    timestamp = new Date(parseInt(parseFloat(rating.created_at) * 1000)).toISOString()
+    data =
+      author: [['account', otcUserID(rating.rater_nick)], ['nickname', rating.rater_nick]]
+      recipient: [['account', otcUserID(rating.rated_nick)], ['nickname', rating.rated_nick]]
+      rating: parseInt(rating.rating)
+      comment: rating.notes
+      timestamp: timestamp
+      context: 'bitcoin-otc.com'
+    m = identifi.Message.createRating(data, myKey)
+    msgsToAdd.push(m)
+  process.stdout.write("\n")
 
 saveUserProfile = (filename) ->
   content = fs.readFileSync VIEWGPG_DIR + '/' + filename, 'utf-8'
@@ -120,25 +113,39 @@ saveUserProfile = (filename) ->
     recipient: recipient
     timestamp: timestamp
   m = identifi.Message.createVerification(data, myKey)
-  myIndex.addMessage(m)
+  msgsToAdd.push(m)
 
 saveRatings = ->
-  ipfs = ipfsAPI()
-  myKey = identifi.util.getDefaultKey('.')
-  identifi.Index.create().then (index) ->
+  gun = new GUN(['http://localhost:8080/gun', 'https://identifi.herokuapp.com/gun'])
+  myKey = identifi.Key.getDefault()
+  identifi.Index.create(gun).then (index) ->
     myIndex = index
-    fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
-      fn = (i) ->
-        return if i >= filenames.length
-        filename = filenames[i]
-        console.log i + ' / ' + filenames.length + ' adding to identifi: ' + filename
-        saveUserRatings(filename)
-        .then -> saveUserProfile(filename)
-        .then -> fn(i + 1)
-        .catch (e) ->
-          console.log 'Caught error, trying to continue', e
-          fn(i + 1)
-      fn(0)
+    m = identifi.Message.createRating
+      recipient:[['account', 'BCB@bitcoin-otc.com']],
+      rating:10,
+      comment:'WoT entry point'
+    , myKey
+    myIndex.addMessage(m)
+  .then ->
+    p = new Promise (resolve) ->
+      fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
+        for filename, i in filenames
+          break if i >= 10
+          console.log i + ' / ' + filenames.length + ' adding to identifi: ' + filename
+          try
+            saveUserRatings(filename)
+            saveUserProfile(filename)
+          catch e
+            console.log 'crawling', filename, 'failed:', e
+        resolve()
+  .then ->
+    console.log 'msgsToAdd.length', msgsToAdd.length
+    myIndex.addMessages(msgsToAdd)
+  .then ->
+    myIndex.save()
+  .then (r) ->
+    console.log r
+    console.log 'added'
 
 #downloadUserList()
 #.then ->
