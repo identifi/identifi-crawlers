@@ -1,7 +1,8 @@
 rp = require('request-promise')
 identifi = require('identifi-lib')
-btree = require('merkle-btree')
 GUN = require('gun')
+require('gun/lib/then')
+require('gun/lib/load')
 cheerio = require('cheerio')
 Promise = require('bluebird')
 fs = Promise.promisifyAll(require('fs'))
@@ -116,9 +117,9 @@ saveUserProfile = (filename) ->
   msgsToAdd.push(m)
 
 saveRatings = ->
-  gun = new GUN(['http://localhost:8080/gun', 'https://identifi.herokuapp.com/gun'])
+  gun = new GUN(['http://localhost:8765/gun']) # 'https://identifi.herokuapp.com/gun'
   myKey = identifi.Key.getDefault()
-  identifi.Index.create(gun).then (index) ->
+  identifi.Index.create(gun.get('identifi')).then (index) ->
     myIndex = index
     m = identifi.Message.createRating
       recipient:[['account', 'BCB@bitcoin-otc.com']],
@@ -141,8 +142,6 @@ saveRatings = ->
   .then ->
     console.log 'msgsToAdd.length', msgsToAdd.length
     myIndex.addMessages(msgsToAdd)
-  .then ->
-    myIndex.save()
   .then (r) ->
     console.log r
     console.log 'added'
