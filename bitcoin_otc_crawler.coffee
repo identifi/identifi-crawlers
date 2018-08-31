@@ -117,7 +117,7 @@ saveUserProfile = (filename) ->
   msgsToAdd.push(m)
 
 saveRatings = ->
-  gun = new GUN(['http://localhost:8765/gun']) # 'https://identifi.herokuapp.com/gun'
+  gun = new GUN(['http://localhost:8765/gun', 'https://identifi.herokuapp.com/gun'])
   myKey = identifi.Key.getDefault()
   identifi.Index.create(gun.get('identifi')).then (index) ->
     myIndex = index
@@ -131,7 +131,7 @@ saveRatings = ->
     p = new Promise (resolve) ->
       fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
         for filename, i in filenames
-          break if i >= 10
+          break if i >= 200
           console.log i + ' / ' + filenames.length + ' adding to identifi: ' + filename
           try
             saveUserRatings(filename)
