@@ -88,7 +88,7 @@ saveUserRatings = (filename) ->
       comment: rating.notes
       timestamp: timestamp
       context: 'bitcoin-otc.com'
-    m = identifi.Message.createRating(data, myKey)
+    m = await identifi.Message.createRating(data, myKey)
     msgsToAdd.push(m)
   process.stdout.write("\n")
 
@@ -113,32 +113,30 @@ saveUserProfile = (filename) ->
     author: [['account', otcUserID(ratedUserName)], ['nickname', ratedUserName]],
     recipient: recipient
     timestamp: timestamp
-  m = identifi.Message.createVerification(data, myKey)
+  m = await identifi.Message.createVerification(data, myKey)
   msgsToAdd.push(m)
 
 saveRatings = ->
   gun = new GUN(['http://localhost:8765/gun', 'https://identifi.herokuapp.com/gun'])
-  myKey = identifi.Key.getDefault()
-  identifi.Index.create(gun.get('identifi')).then (index) ->
-    myIndex = index
-    m = identifi.Message.createRating
-      recipient:[['account', 'BCB@bitcoin-otc.com']],
-      rating:10,
-      comment:'WoT entry point'
-    , myKey
-    myIndex.addMessage(m)
-  .then ->
-    p = new Promise (resolve) ->
-      fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
-        for filename, i in filenames
-          break if i >= 200
-          console.log i + ' / ' + filenames.length + ' adding to identifi: ' + filename
-          try
-            saveUserRatings(filename)
-            saveUserProfile(filename)
-          catch e
-            console.log 'crawling', filename, 'failed:', e
-        resolve()
+  myKey = await identifi.Key.getDefault()
+  myIndex = await identifi.Index.create(gun.get('identifi'), {name: 'keyID', val: identifi.Key.getId(myKey)})
+  m = await identifi.Message.createRating
+    recipient:[['account', 'BCB@bitcoin-otc.com']],
+    rating:10,
+    comment:'WoT entry point'
+  , myKey
+  await myIndex.addMessage(m)
+  p = new Promise (resolve) ->
+    fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
+      for filename, i in filenames
+        break if i >= 200
+        console.log i + ' / ' + filenames.length + ' adding to identifi: ' + filename
+        try
+          await saveUserRatings(filename)
+          await saveUserProfile(filename)
+        catch e
+          console.log 'crawling', filename, 'failed:', e
+      resolve()
   .then ->
     console.log 'msgsToAdd.length', msgsToAdd.length
     myIndex.addMessages(msgsToAdd)
