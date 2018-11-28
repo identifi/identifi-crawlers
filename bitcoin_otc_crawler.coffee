@@ -8,6 +8,8 @@ Promise = require('bluebird')
 fs = Promise.promisifyAll(require('fs'))
 osHomedir = require('os-homedir')
 datadir = process.env.IDENTIFI_DATADIR || (osHomedir() + '/.identifi')
+ipfsAPI = require('ipfs-api')
+ipfs = ipfsAPI()
 
 USER_LIST_FILE = "bitcoin-otc-data/bitcoin-otc-wot.html"
 RATINGDETAILS_DIR = "bitcoin-otc-data/ratingdetails"
@@ -125,7 +127,7 @@ saveRatings = ->
     rating:10,
     comment:'WoT entry point'
   , myKey
-  await myIndex.addMessage(m)
+  await myIndex.addMessage(m, ipfs)
   p = new Promise (resolve) ->
     fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
       for filename, i in filenames
@@ -139,7 +141,7 @@ saveRatings = ->
       resolve()
   .then ->
     console.log 'msgsToAdd.length', msgsToAdd.length
-    myIndex.addMessages(msgsToAdd)
+    myIndex.addMessages(msgsToAdd, ipfs)
   .then (r) ->
     console.log r
     console.log 'added'
