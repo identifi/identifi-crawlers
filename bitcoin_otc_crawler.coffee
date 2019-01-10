@@ -18,6 +18,7 @@ LISTING_URI = "http://bitcoin-otc.com/viewratings.php"
 
 myIndex = null
 myKey = null
+myKeyId = null
 msgsToAdd = []
 
 ratingsJsonUrl = (username) ->
@@ -121,7 +122,8 @@ saveUserProfile = (filename) ->
 saveRatings = ->
   gun = new GUN(['http://localhost:8765/gun', 'https://identifi.herokuapp.com/gun'])
   myKey = await identifi.Key.getDefault()
-  myIndex = await identifi.Index.create(gun.get('identifi'), {name: 'keyID', val: identifi.Key.getId(myKey)})
+  myKeyId = identifi.Key.getId(myKey)
+  myIndex = await identifi.Index.create(gun.get(myKeyId), {name: 'keyID', val: myKeyId})
   m = await identifi.Message.createRating
     recipient:[['account', 'BCB@bitcoin-otc.com']],
     rating:10,
