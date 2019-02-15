@@ -85,8 +85,8 @@ saveUserRatings = (filename) ->
     continue unless rating.rater_nick and rating.rated_nick
     timestamp = new Date(parseInt(parseFloat(rating.created_at) * 1000)).toISOString()
     data =
-      author: [['account', otcUserID(rating.rater_nick)], ['nickname', rating.rater_nick]]
-      recipient: [['account', otcUserID(rating.rated_nick)], ['nickname', rating.rated_nick]]
+      author: {account: otcUserID(rating.rater_nick), nickname: rating.rater_nick}
+      recipient: {account: otcUserID(rating.rated_nick), nickname: rating.rated_nick}
       rating: parseInt(rating.rating)
       comment: rating.notes
       timestamp: timestamp
@@ -104,16 +104,17 @@ saveUserProfile = (filename) ->
     return new Promise (resolve) -> resolve()
   ratedUserName = filename[0..-6] # remove .json
 
-  recipient = [
-    ['account', otcUserID(ratedUserName)],
-    ['nickname', ratedUserName]
-  ]
-  recipient.push ['bitcoin', ratedUser.bitcoinaddress] if ratedUser.bitcoinaddress
-  recipient.push ['gpg_fingerprint', ratedUser.fingerprint] if ratedUser.fingerprint
-  recipient.push ['gpg_keyid', ratedUser.keyid] if ratedUser.keyid
+  recipient =
+    account: otcUserID(ratedUserName)
+    nickname: ratedUserName
+  recipient.bitcoin ratedUser.bitcoinaddress if ratedUser.bitcoinaddress
+  recipient.gpg_fingerprint = ratedUser.fingerprint if ratedUser.fingerprint
+  recipient.gpg_keyid = ratedUser.keyid if ratedUser.keyid
   timestamp = new Date(parseInt(ratedUser.last_authed_at) * 1000)
   data =
-    author: [['account', otcUserID(ratedUserName)], ['nickname', ratedUserName]],
+    author:
+      account: otcUserID(ratedUserName)
+      nickname: ratedUserName
     recipient: recipient
     timestamp: timestamp
   m = await identifi.Message.createVerification(data, myKey)
@@ -123,12 +124,13 @@ saveRatings = ->
   gun = new GUN(['http://localhost:8765/gun', 'https://identifi.herokuapp.com/gun'])
   myKey = await identifi.Key.getDefault()
   myKeyId = identifi.Key.getId(myKey)
-  myIndex = await identifi.Index.create(gun.get(myKeyId), {name: 'keyID', val: myKeyId})
-  m = await identifi.Message.createRating
-    recipient:[['account', 'BCB@bitcoin-otc.com']],
-    rating:10,
+  myIndex = await identifi.Index.create(gun, myKey)
+  msgData =
+    recipient:
+      account: 'BCB@bitcoin-otc.com'
+    rating:10
     comment:'WoT entry point'
-  , myKey
+  m = await identifi.Message.createRating msgData, myKey
   await myIndex.addMessage(m, ipfs)
   p = new Promise (resolve) ->
     fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
@@ -148,7 +150,7 @@ saveRatings = ->
     console.log r
     console.log 'added'
 
-#downloadUserList()
-#.then ->
-#download()
-saveRatings()
+downloadUserList()
+.then ->
+download()
+#saveRatings()
