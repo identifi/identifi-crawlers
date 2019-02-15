@@ -126,7 +126,7 @@ saveRatings = ->
   gun = new GUN(['http://localhost:8765/gun', 'https://identifi.herokuapp.com/gun'])
   myKey = await identifi.Key.getDefault()
   myKeyId = identifi.Key.getId(myKey)
-  myIndex = await identifi.Index.create(gun, myKey)
+  myIndex = await identifi.Index.create(gun, myKey, {ipfs})
   msgData =
     recipient:
       account: 'BCB@bitcoin-otc.com'
