@@ -16,6 +16,8 @@ RATINGDETAILS_DIR = "bitcoin-otc-data/ratingdetails"
 VIEWGPG_DIR = "bitcoin-otc-data/viewgpg"
 LISTING_URI = "http://bitcoin-otc.com/viewratings.php"
 
+TIMEOUT_MS = 10000
+
 myIndex = null
 myKey = null
 myKeyId = null
@@ -47,20 +49,20 @@ parseUserList = ->
   return users
 
 downloadRatingDetails = (username) ->
-  rp(ratingsJsonUrl(username))
+  rp({uri: ratingsJsonUrl(username), timeout: TIMEOUT_MS})
     .catch (e) -> console.log(e)
     .then (res) ->
       fs.writeFileAsync(RATINGDETAILS_DIR + '/' + username + '.json', res)
 
 downloadViewGPG = (username) ->
-  rp(userJsonUrl(username))
+  rp({uri: userJsonUrl(username), timeout: TIMEOUT_MS})
     .catch (e) -> console.log(e)
     .then (res) ->
       fs.writeFileAsync(VIEWGPG_DIR + '/' + username + '.json', res)
 
 downloadUserList = ->
   console.log "Downloading " + LISTING_URI
-  rp(LISTING_URI)
+  rp({uri:LISTING_URI, timeout: TIMEOUT_MS})
     .then (res) ->
       console.log "Writing user list file"
       fs.writeFileAsync(USER_LIST_FILE, res)
@@ -150,7 +152,7 @@ saveRatings = ->
     console.log r
     console.log 'added'
 
-downloadUserList()
-.then ->
-download()
-#saveRatings()
+#downloadUserList()
+#.then ->
+#download()
+saveRatings()
