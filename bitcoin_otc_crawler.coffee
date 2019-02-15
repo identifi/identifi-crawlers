@@ -109,7 +109,7 @@ saveUserProfile = (filename) ->
   recipient =
     account: otcUserID(ratedUserName)
     nickname: ratedUserName
-  recipient.bitcoin ratedUser.bitcoinaddress if ratedUser.bitcoinaddress
+  recipient.bitcoin = ratedUser.bitcoinaddress if ratedUser.bitcoinaddress
   recipient.gpg_fingerprint = ratedUser.fingerprint if ratedUser.fingerprint
   recipient.gpg_keyid = ratedUser.keyid if ratedUser.keyid
   timestamp = new Date(parseInt(ratedUser.last_authed_at) * 1000)
