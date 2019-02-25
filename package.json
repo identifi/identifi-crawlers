@@ -6,7 +6,7 @@
     "cheerio": "^0.20.0",
     "debug": "^3.1.0",
     "gun": "^0.9.9999991",
-    "identifi-lib": "0.0.89",
+    "identifi-lib": "0.0.90",
     "ipfs": "^0.33.1",
     "ipfs-api": "^26.1.2",
     "os-homedir": "^1.0.1",
