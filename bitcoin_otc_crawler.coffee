@@ -123,7 +123,7 @@ saveUserProfile = (filename) ->
   msgsToAdd.push(m)
 
 saveRatings = ->
-  gun = new GUN(['http://localhost:8765/gun', 'https://identifi.herokuapp.com/gun'])
+  gun = new GUN(['http://localhost:8765/gun', 'https://gun-us.herokuapp.com/gun', 'https://gun-eu.herokuapp.com/gun'])
   myKey = await identifi.Key.getDefault()
   myKeyId = identifi.Key.getId(myKey)
   myIndex = await identifi.Index.create(gun, myKey, {ipfs})
