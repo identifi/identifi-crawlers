@@ -1,6 +1,7 @@
 rp = require('request-promise')
 identifi = require('iris-lib')
 GUN = require('gun')
+GUN = require('gun/sea')
 require('gun/lib/then')
 require('gun/lib/load')
 cheerio = require('cheerio')
