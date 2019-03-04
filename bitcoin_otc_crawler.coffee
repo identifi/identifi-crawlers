@@ -1,5 +1,5 @@
 rp = require('request-promise')
-identifi = require('identifi-lib')
+identifi = require('iris-lib')
 GUN = require('gun')
 require('gun/lib/then')
 require('gun/lib/load')
