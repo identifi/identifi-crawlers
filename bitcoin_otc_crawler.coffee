@@ -124,7 +124,8 @@ saveUserProfile = (filename) ->
   msgsToAdd.push(m)
 
 saveRatings = ->
-  gun = new GUN(['http://localhost:8765/gun', 'https://gun-us.herokuapp.com/gun', 'https://gun-eu.herokuapp.com/gun'])
+  # gun = new GUN(['http://localhost:8765/gun', 'https://gun-us.herokuapp.com/gun', 'https://gun-eu.herokuapp.com/gun'])
+  gun = new GUN({ chunk: 1024 * 250, peers: ['http://localhost:8765/gun', 'https://gun-us.herokuapp.com/gun', 'https://gun-eu.herokuapp.com/gun'] })
   myKey = await identifi.Key.getDefault()
   myKeyId = identifi.Key.getId(myKey)
   myIndex = await identifi.Index.create(gun, myKey, {ipfs})
@@ -134,7 +135,7 @@ saveRatings = ->
     rating:10
     comment:'WoT entry point'
   m = await identifi.Message.createRating msgData, myKey
-  await myIndex.addMessage(m, ipfs)
+  await myIndex.addMessage(m)
   p = new Promise (resolve) ->
     fs.readdir RATINGDETAILS_DIR, (err, filenames) ->
       for filename, i in filenames
@@ -148,7 +149,7 @@ saveRatings = ->
       resolve()
   .then ->
     console.log 'msgsToAdd.length', msgsToAdd.length
-    myIndex.addMessages(msgsToAdd, ipfs)
+    myIndex.addMessages(msgsToAdd)
   .then (r) ->
     console.log r
     console.log 'added'
