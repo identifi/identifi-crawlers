@@ -1,3 +1,6 @@
 bitcoin-otc-data
 node_modules
 config.yml
+radata*
+private.key
+bitcoin_otc_crawler.js
